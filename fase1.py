@@ -1,230 +1,169 @@
 import pygame
-from pygame.locals import * 
-from sys import exit
-import random
+from pygame.locals import *
+import sys
 
+# Seus caminhos para as imagens
 background_image_filename = "fundo.png"
-sprite_image_filename = "araraazul.png"
-object_image_fase1 = "bala.png"
+arara_image_filename = "araraazul.png"
+bala_image_fase1 = "bala.png"
+madeira_image_filename = "madeira.png"
+fogo_image_filename = "fogo.png"
 
-
-
-
-pygame.init ()
-screen = pygame.display. set_mode ((14950, 674), 0, 32)
+pygame.init()
+screen = pygame.display.set_mode((14950, 674), 0, 32)
 background = pygame.image.load(background_image_filename).convert()
-sprite = pygame. image.load(sprite_image_filename)
-object_image = pygame.image.load(object_image_fase1)
+arara_img = pygame.image.load(arara_image_filename)
+bala_img = pygame.image.load(bala_image_fase1)
+madeira_img = pygame.image.load(madeira_image_filename)
+fogo_img = pygame.image.load(fogo_image_filename)
+
+bala_img = pygame.transform.scale(bala_img, (100, 100))
+madeira_img = pygame.transform.scale(madeira_img, (100, 100))
+fogo_img = pygame.transform.scale(fogo_img, (100, 100))
 
 clock = pygame.time.Clock()
 
 x = 0
 y = 0
 move_y = 0
-speed = 250
-xObject = 0
+speed = 150
 
+arara_rect = arara_img.get_rect()
+arara_rect.topleft = (0, y)
 
+bala_rects = [
+    bala_img.get_rect(x=3200, y=100),
+    bala_img.get_rect(x=4500, y=250)
+]
 
+madeira_rects = [
+    madeira_img.get_rect(x=2000, y=100),
+    madeira_img.get_rect(x=3000, y=250)
+]
 
-while True: 
-    for event in pygame.event.get ():
-        if event.type == QUIT:
-            pygame.quit()
-            exit ()
+fogo_rects = [
+    fogo_img.get_rect(x=1300, y=100),
+    fogo_img.get_rect(x=3800, y=250)
+]
 
+vidas = 3
+colisao = [False, False, False, False]  # Lista para controlar colisão com cada bala
+colisao_madeira = [False, False]  # Lista para controlar colisão com cada madeira
+colisao_fogo = [False, False]  # Lista para controlar colisão com cada fogo
+
+piscar = False  # Variável para alternar a visibilidade da arara
+piscar_countdown = 0  # Contador para controlar o tempo de piscagem
+piscar_duration = 10  # Duração da piscagem (em ciclos)
+
+running = True
+while running:
     screen.blit(background, (x, 0))
-    screen.blit(object_image, (1200, 100))
-    screen.blit(object_image, ( 2300, 400))
-    screen.blit(object_image, ( 3100, 200))
 
+    if piscar:
+        if piscar_countdown % 2 == 0:
+            screen.blit(arara_img, (0, y))
+    else:
+        screen.blit(arara_img, (0, y))
 
+    for bala_rect in bala_rects:
+        screen.blit(bala_img, bala_rect.topleft)
 
-    screen.blit(sprite, (0, y))
+    for madeira_rect in madeira_rects:
+        screen.blit(madeira_img, madeira_rect.topleft)
 
-    time_passed = clock.tick()
-    time_passed_seconds =  time_passed / 1000.0
+    for fogo_rect in fogo_rects:
+        screen.blit(fogo_img, fogo_rect.topleft)
+
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"Vidasss: {vidas}", True, (255, 0, 0))
+    screen.blit(text, (10, 10))
+
+    pygame.display.flip()
+
+    time_passed = clock.tick(60)
+    time_passed_seconds = time_passed / 1000.0
 
     distance_moved = time_passed_seconds * speed
     x -= distance_moved
 
-    distance_moved = time_passed_seconds * speed
-    xObject -= distance_moved
-
-    sprite_rect = sprite.get_rect()
-    sprite_rect.topleft = (0, y)
-
-    object_rect = object_image.get_rect()
-    object_rect.topleft = (xObject + 1200, 100)  # Posição da bala - ajuste conforme necessário
-
-    if sprite_rect.colliderect(object_rect):
-        print("Arara colidiu com a bala!")
-
-   
-
-    #up
-    if event.type == KEYDOWN:
-        if event.key==K_UP:
-            move_y=-3
-    if event.type == KEYUP:
-        if event.key == K_UP:
-            move_y=0
-
-    #down
-    if event.type == KEYDOWN:
-        if event.key==K_DOWN:
-            move_y=+3
-    if event.type == KEYUP:
-        if event.key == K_DOWN:
-            move_y=0
-
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == KEYDOWN:
+            if event.key == K_UP:
+                move_y = -4
+            if event.key == K_DOWN:
+                move_y = 4
+        if event.type == KEYUP:
+            if event.key == K_UP or event.key == K_DOWN:
+                move_y = 0
 
     y += move_y
 
-    #if y >= 674:
-     #y = 100
+    for bala_rect in bala_rects:
+        bala_rect.x -= int(distance_moved)
+
+    for madeira_rect in madeira_rects:
+        madeira_rect.x -= int(distance_moved)  # Movimento da direita para a esquerda
+
+    for fogo_rect in fogo_rects:
+        fogo_rect.x -= int(distance_moved)  # Movimento da direita para a esquerda
+
+    if move_y != 0:
+        for i, bala_rect in enumerate(bala_rects):
+            if arara_rect.colliderect(bala_rect) and not colisao[i]:
+                vidas -= 1
+                colisao[i] = True
+                del bala_rects[i]
+
+                piscar = True
+                piscar_countdown = piscar_duration
+
+        for i, madeira_rect in enumerate(madeira_rects):
+            if arara_rect.colliderect(madeira_rect) and not colisao_madeira[i]:
+                vidas -= 1
+                colisao_madeira[i] = True
+                del madeira_rects[i]
+
+                piscar = True
+                piscar_countdown = piscar_duration
+
+        for i, fogo_rect in enumerate(fogo_rects):
+            if arara_rect.colliderect(fogo_rect) and not colisao_fogo[i]:
+                vidas -= 1
+                colisao_fogo[i] = True
+                del fogo_rects[i]
+
+                piscar = True
+                piscar_countdown = piscar_duration
+
+    if piscar:
+        piscar_countdown -= 1
+        if piscar_countdown <= 0:
+            piscar = False
+
+    for i, bala_rect in enumerate(bala_rects[:]):
+        if not arara_rect.colliderect(bala_rect) and colisao[i]:
+            colisao[i] = False
+
+    for i, madeira_rect in enumerate(madeira_rects[:]):
+        if not arara_rect.colliderect(madeira_rect) and colisao_madeira[i]:
+            colisao_madeira[i] = False
+
+    for i, fogo_rect in enumerate(fogo_rects[:]):
+        if not arara_rect.colliderect(fogo_rect) and colisao_fogo[i]:
+            colisao_fogo[i] = False
+
+    if vidas == 0:
+        print("Você perdeu todas as vidas! Fim de jogo!")
+        running = False
+
     if y <= 0:
-        y = 0 
+        y = 0
     elif y >= 674 - 201:
         y = 674 - 201
 
-   
+    arara_rect.topleft = (0, y)
 
-
-    pygame.display.update ()
-
-
-
-
-
-# import pygame
-# from pygame.locals import * 
-# from sys import exit 
-
-
-# background_image_filename = "fundo.png"
-# sprite_image_filename = "araraazul.png"
-
-
-# pygame.init ()
-# screen = pygame.display. set_mode ((1400, 500), 0, 32)
-# background = pygame.image.load(background_image_filename).convert()
-# sprite = pygame. image.load(sprite_image_filename)
-
-# x1 = 0
-
-
-# x,y=0,0
-# move_x, move_y = 0,0
-
-
-# while True: 
-#     for event in pygame.event.get ():
-#         if event.type == QUIT:
-#             pygame.quit()
-#             exit ()
-
-#     screen.blit(background, (0, 0))
-#     screen.blit(sprite, (x1, 100))
-
-#     #up
-#     if event.type == KEYDOWN:
-#         if event.key==K_UP:
-#             move_y=-1
-#     if event.type == KEYUP:
-#         if event.key == K_UP:
-#             move_y=0
-
-#     #down
-#     if event.type == KEYDOWN:
-#         if event.key==K_DOWN:
-#             move_y=+1
-#     if event.type == KEYUP:
-#         if event.key == K_DOWN:
-#             move_y=0
-
-
-#     x += move_x
-#     y += move_y
-
-#     x1 += 1
-
-#     # if x > 640:
-#     #     x -= 640
-#     pygame.display.update ()
-
-  # if event.type == CREATE_OBJECT_EVENT:
-    #         random_x = random.randint(0, 1400 - object_image.get_width())
-    #         random_y = random.randint(0, 500 - object_image.get_height())
-    #         screen.blit(object_image, (random_x, random_y))
-
-    
-     # ERRADDO Gera coordenadas x e y aleatórias para o objeto da fase 1
-
-
-
-    # if x <= -1400:  # Verifica se o fundo ultrapassou o comprimento total
-    #     x = 0  # Reinicia a posição do fundo para 0
-
-
-
-    # # Crie retângulos de colisão para os elementos
-    # sprite_rect = sprite.get_rect()
-    # sprite_rect.topleft = (0, y)
-
-    # object_rect = object_image.get_rect()
-    # object_rect.topleft = (xObject + 1200, 100)  # Posição da bala - ajuste conforme necessário
-
-    # # Verifique a colisão entre a arara e a bala
-    # if sprite_rect.colliderect(object_rect):
-    #     is_grayscale = True
-    #     grayscale_time = pygame.time.get_ticks()  # Obtém o tempo atual em milissegundos
-
-    # # Se a arara estiver em preto e branco e o tempo passado for maior que a duração definida
-    # if is_grayscale and pygame.time.get_ticks() - grayscale_time >= grayscale_duration:
-    #     is_grayscale = False
-    #     sprite = pygame.image.load(sprite_image_filename)  # Restaura a imagem colorida
-
-    # # Se a arara estiver em preto e branco, blit a versão em escala de cinza
-    # if is_grayscale:
-    #     screen.blit(sprite_gray, (0, y))
-    # else:
-    #     screen.blit(sprite, (0, y))
-
-
-
-
-    # sprite_rect = sprite.get_rect()
-    # sprite_rect.topleft = (0, y)
-
-    # object_rect = object_image.get_rect()
-    # object_rect.topleft = (xObject + 1200, 100)  # Posição da bala - ajuste conforme necessário
-
-    # # Verifique a colisão entre a arara e a bala
-    # if sprite_rect.colliderect(object_rect):
-    #     # Converta a imagem da arara para escala de cinza
-    #     sprite = sprite_gray.copy()
-    #     screen.blit(sprite, (0, y))
-
-    #     # Atualize a tela
-    #     pygame.display.update()
-
-    #     # Espere por 3 segundos (3000 milissegundos)
-    #     pygame.time.delay(3000)
-
-    #     # Restaure a imagem colorida da arara
-    #     sprite = pygame.image.load(sprite_image_filename)
-
-
-# # Defina uma variável de controle para saber se a arara está em preto e branco
-# is_grayscale = False
-# grayscale_time = 0
-# grayscale_duration = 3000  # 3 segundos em milissegundos
-
-# # Função para converter a imagem para escala de cinza
-# def grayscale(image):
-#     return image.convert_alpha()
-
-# # Carregue as imagens em escala de cinza
-# sprite_gray = grayscale(sprite)
-# object_image_gray = grayscale(object_image)
+pygame.quit()
+sys.exit()
