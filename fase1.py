@@ -8,6 +8,7 @@ arara_image_filename = "araraazul.png"
 bala_image_fase1 = "bala.png"
 madeira_image_filename = "madeira.png"
 fogo_image_filename = "fogo.png"
+button_image_filename = "botao.png" 
 
 pygame.init()
 screen = pygame.display.set_mode((14950, 674), 0, 32)
@@ -16,10 +17,13 @@ arara_img = pygame.image.load(arara_image_filename)
 bala_img = pygame.image.load(bala_image_fase1)
 madeira_img = pygame.image.load(madeira_image_filename)
 fogo_img = pygame.image.load(fogo_image_filename)
+button_img = pygame.image.load(button_image_filename)  
+
 
 bala_img = pygame.transform.scale(bala_img, (100, 100))
 madeira_img = pygame.transform.scale(madeira_img, (100, 100))
 fogo_img = pygame.transform.scale(fogo_img, (100, 100))
+button_img = pygame.transform.scale(button_img, (200, 50))
 
 clock = pygame.time.Clock()
 
@@ -55,6 +59,37 @@ piscar = False  # Variável para alternar a visibilidade da arara
 piscar_countdown = 0  # Contador para controlar o tempo de piscagem
 piscar_duration = 10  # Duração da piscagem (em ciclos)
 
+
+button_rect = button_img.get_rect(topleft=(700, 300))
+font = pygame.font.Font(None, 36)
+
+start_game = False
+
+while not start_game:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == MOUSEBUTTONDOWN:
+            if button_rect.collidepoint(event.pos):
+                start_game = True
+
+    screen.blit(background, (x, 0))
+
+    if piscar:
+        if piscar_countdown % 2 == 0:
+            screen.blit(arara_img, (0, y))
+    else:
+        screen.blit(arara_img, (0, y))
+
+    screen.blit(button_img, button_rect.topleft) # Desenha o botão na tela
+    text = font.render("Iniciar Jogo", True, (255, 255, 255))
+    screen.blit(button_img, button_rect)
+
+    pygame.display.flip()
+    clock.tick(60)
+
+# Loop principal do jogo começa aqui
 running = True
 while running:
     screen.blit(background, (x, 0))
